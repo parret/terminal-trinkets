@@ -2,6 +2,10 @@
 
 Run to simulate water droplets accumulating and running down the screen in pure ascii!
 
+## Usage
+just `./rainy`, nothing fancy. If you don't clear out your terminal screen, the drop will
+run down your screen and wipe away any text in it's way, it's pretty cool.
+
 You'll probably have to zoom-out (or in) as I hard-coded this to my screen's resolution, lol.
 I'll need to fix that at some point.
 
