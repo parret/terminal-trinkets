@@ -2,8 +2,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 using namespace std;
+
+struct winsize w;
 
 int main(int argv, char* argc[]){
   int density;
@@ -16,7 +19,8 @@ int main(int argv, char* argc[]){
   int j;
   // cout << "\033[2J"; fflush(stdout);
   while (true) {
-    cout << "\033[" << (rand()%45) << ";" << (rand()%150) << "H"; fflush(stdout);
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    cout << "\033[" << (rand() % w.ws_row) << ";" << (rand()% w.ws_col) << "H"; fflush(stdout);
     j = (rand() % density);
     if (j == 0) {
       cout << "#";

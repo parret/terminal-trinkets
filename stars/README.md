@@ -1,12 +1,18 @@
 # Stars
 
-Randomly generates a constantly changing feild of stars in the terminal
-in pure ascii! Give it a positive integer, the lower the number, the more
+Randomly generates a constantly changing field of stars in the terminal
+in pure ascii! Give it a positive integer - the lower the number, the more
 dense the sky will be.
+
+The size of the sky dynamically resizes to match the size of the
+terminal, even is it is resized while the program is running.
 
 ## Usage
 
-`./stars 1000` will give a fairly sparse sky.
+`./stars` will run the default density of 100.
+
+`./stars 1000` will yield fairly sparse sky.
 
 `./stars 1` will give a max density sky (just a wall of `#`, quite boring)
-Try any other number!
+
+Try any positive int!
