@@ -102,7 +102,7 @@ public:
 };
 
 void *NewDrop(void *threadid){  
-  Drop drop((rand() % w.ws_col), rand() & w.ws_row);
+  Drop drop((rand() % w.ws_col), (rand() & w.ws_row + 5) - 5);
   while (drop.getY() < w.ws_row+1 && drop.getX() < w.ws_col){
     drop.stepDraw();
     drop.computeNext();
