@@ -3,8 +3,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 using namespace std;
+
+struct winsize w;
 
 // THIS CODE IS DISGUSTING, YE BE WARNED
 mutex mtx;
@@ -99,8 +102,8 @@ public:
 };
 
 void *NewDrop(void *threadid){  
-  Drop drop((rand() % 300), rand()%100);
-  while (drop.getY() < 100){
+  Drop drop((rand() % w.ws_col), rand() & w.ws_row);
+  while (drop.getY() < w.ws_row+1 && drop.getX() < w.ws_col){
     drop.stepDraw();
     drop.computeNext();
     usleep(20000);
@@ -136,13 +139,15 @@ void *Speckle(void *threadid){
       break;
     }
     mtx.lock();
-    cout << "\033[" << rand()%100 << ";" << rand()%300 << "H" << speck; fflush(stdout);
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    cout << "\033[" << rand() % w.ws_row+1 << ";" << rand() % w.ws_col << "H" << speck; fflush(stdout);
     mtx.unlock();
     usleep(rand()%10000);
   }
 }
 
 int main(){
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
   srand((unsigned)time(0));
   int rc;
   
