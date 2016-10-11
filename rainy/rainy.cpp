@@ -8,157 +8,102 @@
 using namespace std;
 
 struct winsize w;
-
-// THIS CODE IS DISGUSTING, YE BE WARNED
 mutex mtx;
+
+void safe_draw(string item, int x, int y){
+    mtx.lock();
+    cout << "\033[" << y << ";" << x << "H" << item; fflush(stdout);
+    mtx.unlock();
+}
+
+string rand_speck() {
+    switch (rand() % 6) {
+        case 0: return ",\'";
+        case 1: return ",";
+        case 2: return "\'";
+        case 3: return ";";
+        case 4: return "..";
+        case 5: return "\',";
+        default: return "OOPS";
+    }
+}
 
 class Drop {
 private:
-  int lastX;
-  int lastY;
-  int x;
-  int y;
-  
+    int x, y, lastX, lastY;
+
 public:
-  Drop(){
-    x = 0;
-    y = 0;
-  }
-
-  Drop(int x, int y){
-    this->x = x;
-    this->y = y;
-    this->lastX = x;
-    this->lastY = y;
-  }
-
-  int getX(){
-    return x;
-  }
-
-  int getY(){
-    return y;
-  }
-
-  int getLastX(){
-    return lastX;
-  }
-
-  int getLastY(){
-    return lastY;
-  }
-
-  void computeNext(){
-    const int LAST_X = x;
-    const int LAST_Y = y;
-
-    // drop is moving
-    if(y != lastY){
-      // drop continues moving
-      if(rand()%20 > 0){
-	y++;
-	if(rand()%5 == 0){
-	  x++;
-	}
-      }
+    Drop() { x = y = 0; }
+    Drop(int x, int y) {
+        this->x = x;
+        this->y = y;
+        this->lastX = x;
+        this->lastY = y;
     }
-    // drop is still
-    else {
-      // drop breaks out of still
-      if(rand()%100 == 0){
-	y++;
-	if(rand()%5 == 0){
-	  x++;
-	}
-      }
+
+    int getX(){ return x; }
+    int getY(){ return y; }
+
+    void draw() { safe_draw("o", x, y); }
+    void undraw() { safe_draw(" ", x, y); }
+    void undrawLast() { safe_draw(" ", lastX, lastY); }
+    void stepDraw() {
+        safe_draw("   ", lastX - 1, lastY);
+        safe_draw("o", x, y);
     }
-    lastX = LAST_X;
-    lastY = LAST_Y;
-  }
- 
-  void draw(){
-    mtx.lock();
-    cout << "\033[" << y << ";" << x << "H" << "o"; fflush(stdout);
-    mtx.unlock();
-  }
 
-  void undrawLast(){
-    mtx.lock();
-    cout << "\033[" << lastY << ";" << lastX << "H" << " "; fflush(stdout);
-    mtx.unlock();
-  }
+    void computeNext() {
+        const int LAST_X = x, LAST_Y = y;
 
-  void undraw(){
-    mtx.lock();
-    cout << "\033[" << y << ";" << x << "H" << " "; fflush(stdout);
-    mtx.unlock();
-  }
+        if (y != lastY) {// drop is moving
+            if (rand() % 20 > 0) { // drop continues moving
+                y++;
+                if (rand() % 5 == 0) { // chance of right drift
+                    x++;
+                }
+            }
+        }
 
-  void stepDraw(){
-    mtx.lock();
-    cout << "\033[" << lastY << ";" << lastX-1 << "H" << "   " << "\033[" << y << ";" << x << "H" << "o"; fflush(stdout);
-    mtx.unlock();
-  }
+        else { // drop is still
+            if (rand() % 100 == 0) { // drop breaks out of still
+                y++;
+                if (rand() % 5 == 0) { // drop drifts right
+                    x++;
+                }
+            }
+        }
+
+        lastX = LAST_X;
+        lastY = LAST_Y;
+    }
 };
 
-void *NewDrop(void *threadid){  
-  Drop drop((rand() % w.ws_col), (rand() & w.ws_row + 5) - 5);
-  while (drop.getY() < w.ws_row+1 && drop.getX() < w.ws_col){
-    drop.stepDraw();
-    drop.computeNext();
-    usleep(20000);
-  }
-  //drop.undraw();
-  pthread_exit(NULL);
+void *NewDrop(void *threadid) {
+    Drop drop((rand() % w.ws_col), (rand() % w.ws_row + 5) - 5);
+    while (drop.getY() < w.ws_row + 1 && drop.getX() < w.ws_col) {
+        drop.stepDraw();
+        drop.computeNext();
+        usleep(20000);
+    }
+    pthread_exit(NULL);
 }
 
-void *Speckle(void *threadid){
-  string speck = "";
-  while(true){
-    switch(rand()%6){
-    case 0:
-      speck = ",\'";
-      break;
-    case 1:
-      speck = ",";
-      break;
-    case 2:
-      speck = "\'";
-      break;
-    case 3:
-      speck = ";";
-      break;
-    case 4:
-      speck = "..";
-      break;
-    case 5:
-      speck = "\',";
-      break;
-    default:
-      speck = "OOPS";
-      break;
+void *Speckle(void *threadid) {
+    while (true) {
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+        safe_draw(rand_speck(), rand() % w.ws_col, rand() % w.ws_row + 1);
+        usleep(rand() % 10000);
     }
-    mtx.lock();
+}
+
+int main() {
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    cout << "\033[" << rand() % w.ws_row+1 << ";" << rand() % w.ws_col << "H" << speck; fflush(stdout);
-    mtx.unlock();
-    usleep(rand()%10000);
-  }
-}
+    srand((unsigned) time(0));
 
-int main(){
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-  srand((unsigned)time(0));
-  int rc;
-  
-  pthread_t threads[100000];
-  rc = pthread_create(&threads[0], NULL, Speckle, (void *)0);
-  for (int i = 1; i < 100000; i++){
-    rc = pthread_create(&threads[i], NULL, NewDrop, (void *)i);
-    if(rc){
-      exit(-1);
+    pthread_t t; // rain is chaotic, so we don't need to worry about tracking threads
+    pthread_create(&t, NULL, Speckle, (void *) 0);
+    while (true) {
+        pthread_create(&t, NULL, NewDrop, (void *) 0);
+        usleep(rand() % 500000 + 1000);
     }
-    usleep(rand()%500000+1000);
-  }
-  pthread_exit(NULL);
 }
