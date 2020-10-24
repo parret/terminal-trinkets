@@ -1,2 +1,2 @@
 all:
-	g++ rainy.cpp -o rainy
+	g++ rainy.cpp -pthread -o rainy
