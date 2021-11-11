@@ -5,7 +5,7 @@ in pure ascii! Give it a positive integer - the lower the number, the more
 dense the sky will be.
 
 The size of the sky dynamically resizes to match the size of the
-terminal, even is it is resized while the program is running.
+terminal, it'll even resize while the program is running.
 
 ## Usage
 
